@@ -1,0 +1,63 @@
+#include "main.h"
+/*
+Você foi convocado para projetar e testar a parte eletrônica de um lançador de foguetes.
+Esse sistema conta com um display de sete segmentos, duas chaves do tipo contato momentâneo (start e stop) e um led.
+O sistema lançador funciona da seguinte maneira:
+- Inicialmente  no display fica aparecendo o número 9 e este número fica piscando com frequência de 1Hz. (2,0)
+Ao acionar a chave start, o sistema começa uma contagem decrescente com intervalo de 1,5 segundos, e o display indica o tempo para o disparo.  (2,0)
+Quando o contador chega a zero é acionado um led que indica o disparo do foguete.      (1,0)
+Este é o funcionamento normal do disparador.
+- Porém problemas podem acontecer nos instantes anteriores à decolagem e o disparo deve ser abortado. Para tanto existe um botão stop que, ao ser acionado, para  a contagem (1,0) decrescente e faz o display piscar com frequência de 3Hz indicando que algo de errado aconteceu e o momento em que isso aconteceu. (2,0)
+Você deverá apresentar o sistema funcionando, o esquemático completo, TODOS os cálculos dos temporizadores e o código implementado 
+*/
+int display[] = {0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F};
+
+int cont = 0, x = 0;
+void TIM11_IRQHandler(void);
+
+int main(void) {
+    RCC->AHB1ENR = 0x87;
+    RCC->AHB2ENR = (1 << 18) | (1 << 16);
+    GPIOC->PUPDR = 0x8; // Entrada pull down para c1;
+    GPIOB->MODER = 0x1555; // Controlar a alimentação
+    GPIOC->MODER = 0x01;
+
+    TIM11->PSC=1999;
+    TIM11->ARR=3999;
+   	TIM11->CR1=0x81;
+   	TIM11->DIER=0x1;
+
+
+    GPIOB->ODR = display[9]; // Inicializa o display com o número 9
+    GPIOC->ODR= 0x00; //desligando a alimentação
+    while (1) {
+      cont=10;
+      if(GPIOC->IDR&0x02){
+
+      			TIM11->ARR = 1999;
+      			TIM11->PSC = 5999;
+      		}
+      		else
+      		{
+
+      			TIM11->ARR = 1999;
+      			TIM11->PSC = 3999;
+
+      		}
+    	if((GPIOC->IDR&0x2)!=0x0){
+    		//se botão pressionado contagem decrescente com interlvalo de 1,5 segundo
+    		 if ((TIM11->SR&0x01) == 0x01) {
+    		         GPIOB->ODR = display[cont]; // Inverte para o número 9, você pode escolher outro número se desejar
+    		         cont--;
+    		         TIM11->SR &= ~0x01; // Limpa a flag de interrupção
+    		     }
+    		 }
+    	else {
+    		// desligando  ligando a interrupção a cada segundo
+    		 if ((TIM11->SR&0x01) == 0x01) {
+    			 GPIOC->ODR^=0x01;
+    			 TIM11->SR &= ~0x01; // Limpa a flag de interrupção
+    			    		     }
+    			    		 }
+    		 }
+    		}
