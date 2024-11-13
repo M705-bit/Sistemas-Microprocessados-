@@ -1,0 +1,130 @@
+#include "main.h"
+/* exercício 7
+Acione os leds em sequência(8 leds), começando de uma ponta da linha e
+percorrendo até a outra ponta, acionando somente um led. O led aceso deve
+“percorrer” a extensão da linha, indo de uma extremidade a outra e
+retornando. Seguir com este movimento indefinidamente.*/
+int qualM[]={0x00,0x03,0x07,0xF,0x1F,0x3F,0x7F,0xFF};
+int main(void)
+{
+	RCC->AHB1ENR|=0x87; // habilita os clock do gpio
+	//habiliar os clocks
+	RCC->APB2ENR|=0x40000;//TIMER 11
+
+	GPIOC->MODER=0x5555;// 0, 1, 2, 3, 4, 5 ,6, 7,
+	//habilitars o tempo
+	TIM11->CR1 = 0x01;
+	TIM11->ARR = 1999;
+	TIM11->PSC =999;
+int x=0, m=0,y=0;
+	while(1){
+		if((TIM11->SR&0x01) == 0x01){
+
+					if(y<9 && x==0){
+						TIM11->SR&=~0x01;
+					y++;
+
+					}
+					else {
+						TIM11->SR&=~0x01;
+						y--;
+						x++;
+					}
+
+				}
+				if(x==8){
+					m++;
+				}
+				else if(m>8){
+					m=0;
+				}
+
+
+
+switch (y)
+{
+case 1: // nem liga o led
+	GPIOC->ODR=0x01;
+	x=0;
+	//ao zerar esse x a condição y<9 && x==0 é satisfeita, pois y foi totalmente decrementado
+	break;
+case 2: // n pisca
+	if(m>0){
+				GPIOC->ODR=qualM[m];
+				GPIOC->ODR=0x02;
+			}
+
+else{
+	GPIOC->ODR=0x02;
+}
+
+	break;
+case 3: // pisca 1
+	if(m>0){
+				GPIOC->ODR=qualM[m];
+				GPIOC->ODR=0x04;
+			}
+
+	else{
+		GPIOC->ODR=0x04;
+	}
+
+		break;
+case 4:
+	if(m>0){
+				GPIOC->ODR=qualM[m];
+				GPIOC->ODR=0x08;
+			}
+
+	else{
+		GPIOC->ODR=0x08;
+	}
+
+	break;
+case 5:
+	if(m>0){
+				GPIOC->ODR=qualM[m];
+				GPIOC->ODR=0x10;
+			}
+
+	else{
+		GPIOC->ODR=0x10;
+	}
+	break;
+case 6:
+	if(m>0){
+				GPIOC->ODR=qualM[m];
+				GPIOC->ODR=0x20;
+			}
+
+	else{
+		GPIOC->ODR=0x20;
+
+	}
+	break;
+case 7:
+
+		if(m>0){
+					GPIOC->ODR=qualM[m];
+					GPIOC->ODR=0x40;
+				}
+
+	else{
+		GPIOC->ODR=0x40;
+	}
+		break;
+case 8:
+	if(m>0){
+			GPIOC->ODR=qualM[m];
+			GPIOC->ODR=0x80;
+		}
+
+
+	else{
+		GPIOC->ODR=0x80;
+	}
+			break;
+
+}
+
+ }}
