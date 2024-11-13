@@ -1,0 +1,102 @@
+#include "main.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+/*
+Configurar a porta serial do ARM para 38400 bps.
+Implementar um relógio com horas, minutos e segundos. 
+A cada segundo, enviar pela porta serial a hora, minuto e segundos do relógio.
+Enquanto os dados estão sendo transmitidos, acionar um led (externo) para sinalizar a transmissão.
+Apresentar os dados na interface serial da seguinte forma:
+
+hh:mm:ss
+hh:mm:ss
+*/
+int seg=0,min=0,dez_seg=0,dez_min=0,hora=0,dez_hora=0, m=0, dado_rx;
+
+void TIM1_UP_TIM10_IRQHandler(void);
+void config_serial(void){
+	RCC->APB1ENR|=0x20000;   // a usart2 é configurada no bit 17
+	GPIOA->MODER|=0xA0; //Configurando Pino A2 e A3 como função alternativa
+	GPIOA->AFR[0]|=0x07700;//ativando a função alternativa usart2 nos pinos PA2 e PA3. AFR é alternate function selection,
+	USART2->CR1|=0x202C; //0x200C; ativando interrupção recepção
+	USART2->CR2=0;
+	USART2->CR3=0;
+	USART2->BRR|=(26<<4);//16MHz/(16*9600); //configurando o baud rate, que é a taixa de oscilação
+	NVIC_SetPriority(USART2_IRQn, 2); //iniciando as interrupçoes
+	NVIC_EnableIRQ(USART2_IRQn);
+}
+
+void manda_serial(int a){
+	while(!((USART2->SR)&0x80)){};
+	USART2->DR=a;
+}
+
+int _write(int file, char *ptr, int len){
+	int i=0;
+	for(i=0 ; i<len ; i++)
+		manda_serial((*ptr++));
+	return len;
+}
+
+void TIM1_UP_TIM10_IRQHandler(void){
+	TIM10->SR=0x0;
+	if(seg<9){
+	seg++;
+
+	}
+	else{seg=0;
+	dez_seg++;}
+	printf("  %i%i: %i%i: %i%i\n\r", dez_hora,hora, dez_min, min, dez_seg, seg);
+	GPIOB->ODR^=0x01;
+}
+void USART2_IRQHandler(void) {
+if (USART2->SR&0x20){
+	dado_rx=USART2->DR;
+	}
+USART2->SR&=~(0x20);
+}
+
+int main(void)
+{
+
+RCC->AHB1ENR=0x00000087;    //habilitando o clock dos GPIO
+	GPIOA->MODER |=0x29555400;    //configurando O PINO A5, preciso configurar o pino a13?
+	GPIOB->MODER=0x5555;
+	RCC->APB2ENR = 1<<17;
+				TIM10->CR1 = 0x81;
+				TIM10->PSC = 7999;
+				TIM10->ARR = 1999;
+				TIM10->DIER = 0x01;
+				NVIC_SetPriority(TIM1_UP_TIM10_IRQn,1);
+					NVIC_EnableIRQ(TIM1_UP_TIM10_IRQn);
+	config_serial();
+
+	while (1)
+	{
+		if(seg>9){
+			seg=0;
+			dez_seg++;
+		}
+		if(dez_seg>5){
+			dez_seg=0;
+			min++;
+		}
+		if(min>9){
+			min=0;
+			dez_min++;
+		}
+		if(dez_min>5){
+			dez_min=0;
+			hora++;
+		}
+		if(hora>9){
+			hora=0;
+			dez_hora++;
+		}
+		if(hora>3 && dez_hora==2){
+			hora=0;
+			dez_hora=0;
+		}
+	}
+}
