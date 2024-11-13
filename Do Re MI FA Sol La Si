@@ -1,0 +1,33 @@
+#include "stm32f4xx.h"
+#include "main.h"
+/*
+Utilize 7 botões, cada vez que um botão é clicado altere a frequência do timer para corresponder a uma nota musical (Do Re MI FA Sol La Si), a partir disso toque uma música. 
+*/
+int botoes[]= {0x01, 0x02, 0x04, 0x08, 0x400, 0x800,0x1000};
+int main(void)
+{
+RCC->AHB1ENR=0x87; // habilita os clock do gpio
+RCC->APB2ENR = 1<<18;
+GPIOC->MODER = 0xA0000000; //pC 0, 1, 2, 3, 10, 11 e 12
+GPIOC->PUPDR = 0x02A000AA;
+//definindo a saida
+GPIOA->MODER = 0x28000001; //pA 0
+TIM11->CR1 = 0x1;
+int psc[8] = {604, 614, 545, 485, 458, 408, 364, 324};
+
+int x=0;
+	while(1){
+		for(x=0; x<7; x++){
+			if ((GPIOC->IDR&botoes[x])==botoes[x]){
+				TIM11->PSC= psc[x];
+				TIM11->ARR=100;
+				 if((TIM11->SR&0x01) == 0x01){
+					  	    GPIOA->ODR ^= 0x01;
+					  		TIM11->SR = 0x00;
+					  }
+							}
+
+						}
+
+
+	}}
