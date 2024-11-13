@@ -1,0 +1,114 @@
+/*
+Você deverá criar um um código para o ARM onde irás controlar no mínimo quatro saídas do microcontrolador. Os comandos para controlar as saídas serão recebidos pela porta serial, 
+este comando deverá ser uma palavra diferente para cada saída. Ao receber um comando, o microcontrolador deverá enviar uma resposta informando se o comando foi executado.
+Também deverá ser criado um software específico para ser utilizado no computador onde serão enviados os comandos e exibidos os retornos do microcontrolador.
+*/
+
+#include <windows.h>
+#include <conio.h>
+#include <stdio.h>
+#include <stdlib.h>
+char comando[20];
+char m;
+HANDLE AbreComm(char *nomecom, int baudrate)
+{
+    HANDLE hcom; //cria um ponteiro de nome hcom
+    DCB cdcb;    //nomeia a estrutura DCB (Device Control Block) utilizada         para definir todos os parâmetros da comunicação
+    COMMTIMEOUTS comto; //nomeia a estrutura COMMTIMEOUTS (COMMon TIME OUTS) utilizada para definir os timeouts da comunicação
+    hcom = CreateFile(
+               nomecom, //nome do arquivo
+               GENERIC_READ | GENERIC_WRITE, //abre arquivo para leitura                         ou escrita
+               0, //indica que o arquivo não pode ser compartilhado
+               NULL, //utiliza a estrutura default para as funções de segurança
+               OPEN_EXISTING, //abre o arquivo, se não existir, retorna erro
+               FILE_ATTRIBUTE_NORMAL, //o arquivo deve ser utilizado                     sozinho
+               NULL); //sem gabarito de atributos
+    if(hcom == INVALID_HANDLE_VALUE) // testa falha na abertura do arquivo
+    {
+        fprintf(stderr, "Nao abriu a %s\n", nomecom);
+        return hcom;
+    }
+
+    GetCommState(hcom, &cdcb); //le os parâmetros de comunicação                     atuais
+    cdcb.BaudRate    = baudrate; //define a taxa de transmissão
+    cdcb.ByteSize    = 8; //define o tamanho do dado - 8 bits
+    cdcb.StopBits    = ONESTOPBIT; //define o tamanho do stop bit - 1                     stop bit
+    cdcb.Parity      = NOPARITY;     //define o tipo de paridade - sem                         paridade
+    if(!SetCommState(hcom,&cdcb)) //seta os novos parâmetros de comunicação
+    {
+        fputs("SetCommState", stderr);
+        return INVALID_HANDLE_VALUE;
+    }
+
+    GetCommTimeouts(hcom, &comto);
+    //Le os parâmetros atuais de COMMTIMEOUTS
+    comto.ReadIntervalTimeout         = MAXDWORD;
+    //tempo máximo entre a chegada de dois caracters consecutivos(ms)
+    comto.ReadTotalTimeoutMultiplier  =    0;
+    comto.ReadTotalTimeoutConstant    =    0;
+    comto.WriteTotalTimeoutMultiplier =    0;
+    comto.WriteTotalTimeoutConstant   =    0;
+    SetCommTimeouts(hcom, &comto);
+    //seta os parâmetros de COMMTIMEOUTS
+    return hcom;
+}
+
+int main(void) {
+
+    HANDLE p_com;
+    unsigned long n;
+    char *ncom = "COM7";
+    int baud = 9600;
+    char dado[2];
+    p_com = AbreComm(ncom, baud);
+    if (p_com == INVALID_HANDLE_VALUE) {
+        getch();
+        return 1;
+    }
+
+    printf("Terminal %s %dbaud\t\t\t\t\t\tESC para sair\n", ncom, baud);
+    printf("Para ligar cada led digite as seguintes letras:\n");
+    printf("a - led azul\n");
+    printf("b - led amarelo\n");
+    printf("c - led vermelho\n");
+    printf("d - led verde\n");
+    //printf("j - desliga todos os leds\n");
+    do {
+        ReadFile(p_com, dado, 1, &n, NULL);
+        if (n) {
+            printf("%c", *dado);
+        }
+        if (kbhit()) {
+            *dado = getch();
+
+            switch (*dado) {
+                case 'a':
+                    strcpy(comando, "$azul");
+                    printf(" liga led azul \n");
+                    break;
+                case 'b':
+                    strcpy(comando, "$amarelo");
+                    printf(" liga led amarelo \n");
+                    break;
+                case 'c':
+                    strcpy(comando, "$vermelho");
+                    printf(" liga led vermelho \n");
+                    break;
+                case 'd':
+                    strcpy(comando, "$verde");
+                    printf(" liga led verde \n");
+                    break;
+            }
+ if((*dado)!= 'a' && (*dado)!= 'b' && (*dado)!= 'c' && (*dado)!= 'd'){
+            strcpy(comando, "$desliga");
+            }
+            WriteFile(p_com, comando, sizeof(comando), &n, NULL);
+            printf("%c", *dado);
+            *dado = '*';
+            WriteFile(p_com, dado, 1, &n, NULL);
+        }
+    } while (*dado!=27);  // Check for the ASCII value of the ESC key
+
+    CloseHandle(p_com);
+    return 0;
+}
