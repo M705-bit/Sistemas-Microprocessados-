@@ -1,8 +1,7 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
+
   ******************************************************************************
 Considerando o núcleo ARM STM32F411RE (446), o led verde da placa e o botão
 azul tipo push button, também da placa, edite um programa em linguagem C empregando
