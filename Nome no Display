@@ -1,0 +1,85 @@
+#include "main.h"
+//Usando quatro displays de sete segmentos, exibir o seu nome.
+//O seu nome deverá ser exibido de forma corrida no display.
+// marina jardim ;
+int display[]= {0x00, 0x00, 0x00, 0x00, 0x37,0x77,0x50,0x06,0x54,0x77};
+int trocaDisplay=0;
+int a=0, b=1, c=2, d=3; //os displays
+void TIM1_TRG_COM_TIM11_IRQHandler(void);
+void TIM1_UP_TIM10_IRQHandler(void);
+
+int main(void)
+{
+RCC->AHB1ENR = 0x087;
+RCC->APB2ENR = (1<<18)|(1<<17);
+GPIOA->MODER = 0x28001405;
+GPIOC->MODER=0x5555;
+
+TIM10->CR1 = 0x81;
+	TIM10->PSC = 799;
+	TIM10->ARR = 99;
+	TIM10->DIER = 0x01;
+
+	NVIC_SetPriority(TIM1_UP_TIM10_IRQn,2);
+	NVIC_EnableIRQ(TIM1_UP_TIM10_IRQn);
+
+	TIM11->CR1 = 0x81;
+	TIM11->ARR =  15999;
+	TIM11->PSC = 999;
+	TIM11->DIER|=0x01;
+
+	NVIC_SetPriority(TIM1_TRG_COM_TIM11_IRQn,3);
+	NVIC_EnableIRQ(TIM1_TRG_COM_TIM11_IRQn);
+
+	  while(1)
+  {
+
+  }
+}
+void TIM1_TRG_COM_TIM11_IRQHandler(void){
+	TIM11->SR=0x0; //zeramos o flag para começar a contar
+	a++;
+	b++;
+	c++;
+	d++;
+	if(d>9){
+		a=0;
+		b=1;
+		c=2;
+		d=3;
+	}
+
+}
+
+void TIM1_UP_TIM10_IRQHandler(void){
+ TIM10->SR=0x00;
+ GPIOA->ODR=~0x0;
+
+	switch(trocaDisplay){
+
+	case 0:
+		GPIOA->ODR= ~0x1;
+		GPIOC->ODR = display[d];
+		break;
+
+	case 1:
+		GPIOA->ODR= ~0x2;
+		GPIOC->ODR = display[c];
+		break;
+
+	case 2:
+		GPIOA->ODR= ~0x20;
+		GPIOC->ODR = display[b];
+		break;
+
+	case 3:
+		GPIOA->ODR= ~0x40;
+		GPIOC->ODR = display[a];
+		break;
+	}
+
+	trocaDisplay++;
+
+
+	if(trocaDisplay>3) trocaDisplay=0;
+}
