@@ -1,0 +1,56 @@
+#include "stm32f4xx.h"
+#include "main.h"
+
+int main(void)
+{
+	RCC->AHB1ENR = 0x87;
+	RCC->APB2ENR |= 1<<17;
+	TIM10->CR1 = 1;
+	TIM10->ARR = 1999;
+	TIM10->PSC = 799;
+	TIM10->EGR = 1;
+
+
+	GPIOB->MODER = 0;
+	GPIOB->MODER |= 1<<0;
+	GPIOB->PUPDR = 0;
+	GPIOB->PUPDR |= 40;
+	GPIOB->PUPDR |= 100;
+	GPIOB->PUPDR |= 400;
+
+	int i, x,m;
+	while(1){
+		i = 0;
+		if(GPIOB->IDR & 0x08){
+			i += 1;
+		}
+		if(GPIOB->IDR & 0x10){
+			i += 2;
+		}
+		if(GPIOB-> IDR & 0x20){
+			i += 4;
+		}
+		if(i == 0){
+			GPIOB->ODR &= 1;
+		}else
+		{
+			GPIOB->ODR |= 1;
+		}
+if(i>5){
+	i=0;
+}
+
+			if ((GPIOB->IDR&0x08) || (GPIOB->IDR&0x10) ||(GPIOB->IDR&0x20)){
+
+		for(x = 0; x < i*2; x++){
+			GPIOB->ODR ^= 1;
+			while(!(TIM10->SR & 1));
+			TIM10->SR &= ~1;
+		}
+GPIOB->ODR = 0x00;
+		for(x = 0; x < 10-i; x++){
+					while(!(TIM10->SR & 1));
+					TIM10->SR &= ~1;
+				}
+		}
+	}}
